@@ -46,7 +46,7 @@ Mod settings (`userConfig` in `.claude-plugin/plugin.json`). Set them with `/plu
 | Key | Default | What it does |
 |---|---|---|
 | `enabled` | `false` | Master switch. Off: nothing is logged, journaled, written or run |
-| `events` | `*` | Hook events to log, space-separated; globs such as `Post*` work. The journal needs `UserPromptSubmit` and `PostToolUse*` |
+| `events` | `*` | Hook events to log, space-separated; globs such as `Post*` work. The journal needs `UserPromptSubmit` and `PostToolUse*`. `MessageDisplay` writes a row per batch of streamed lines, so leave it out for a quieter log |
 | `log_path` | `.skogai/logs/skogai-core/log.jsonl` | Event log, relative to the git root or absolute |
 | `journal` | `false` | On `Stop`, append the turn to the journal and commit only that file |
 | `journal_path` | `.skogai/journal.md` | Turn journal, relative to the git root or absolute |
@@ -75,7 +75,9 @@ tests/run.sh                 tests the scripts in a throwaway git repo
 
 ## Acting upon another event
 
-1. Add the event to `hooks/hooks.json`, pointing at `scripts/events/<Event>.sh`. The events are listed in the [hooks reference](https://code.claude.com/docs/en/hooks#hook-events).
+Every event in the [hooks reference](https://code.claude.com/docs/en/hooks#hook-events) has a script already, except the two listed under [event log](.skogai/features/event-log.md#left-out-on-purpose). For a new one:
+
+1. Add the event to `hooks/hooks.json`, pointing at `scripts/events/<Event>.sh`. `tests/run.sh` fails when the two disagree.
 2. Write the script. Do the work, then pipe the input to `append-json.sh` with a short description of what you did. A script that only logs is one line:
 
    ```sh

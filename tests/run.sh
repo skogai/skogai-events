@@ -102,4 +102,14 @@ row Stop $p '{"last_assistant_message": "x"}' | CLAUDE_PLUGIN_OPTION_ENABLED=fal
 check "settings: enabled false logs and journals nothing" "$before 1" \
   "$(wc -l <"$log") $(grep -c '^## ' "$repo/.skogai/journal.md")"
 
+# hooks.json and scripts/events must agree, and every script must log its row.
+events=$(jq -r '.hooks | keys[]' "$scripts/../hooks/hooks.json" | sort)
+check "hooks.json and the executable scripts in events/ list the same events" "$events" \
+  "$(find "$scripts/events" -name '*.sh' -executable -printf '%f\n' | sed 's/\.sh$//' | sort)"
+: >"$log"
+for event in $events; do
+  row "$event" $p | "$scripts/events/$event.sh" >/dev/null
+done
+check "every event script logs its event" "$events" "$(jq -r .event "$log" | sort)"
+
 exit $fail

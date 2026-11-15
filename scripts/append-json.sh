@@ -6,12 +6,13 @@
 set -euo pipefail
 
 input=$(cat)
-cwd=$(jq -r '.cwd // empty' <<<"$input")
+# Both fields in one jq call: each call costs ~70 ms when jq is a mise shim.
+IFS=$'\x1f' read -r event cwd < <(jq -r '[.hook_event_name // "", .cwd // ""] | join("\u001f")' <<<"$input")
 cwd=${cwd:-$PWD}
 root=$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null || echo "$cwd")
 . "$(dirname "$0")/settings.sh"
 [[ $SKOGAI_ENABLED == true ]] || exit 0
-skogai_logs "$(jq -r '.hook_event_name // empty' <<<"$input")" || exit 0
+skogai_logs "$event" || exit 0
 log=$SKOGAI_LOG
 mkdir -p "$(dirname "$log")"
 

@@ -1,6 +1,6 @@
 {
   "name": "skogai-core",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "description": "Acts upon Claude Code hook events with one script per event. Each part (event log, turn journal, diff state files, git steps, status line) is a mod setting, all off by default.",
   "author": {
     "name": "Emil Skogsund"

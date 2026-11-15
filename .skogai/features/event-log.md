@@ -32,10 +32,14 @@ skogai-core exists to act upon events. The log is the record of every time it di
 
 ## Status
 
-- Built in 0.5.0: `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `PostToolUseFailure`, `Notification`, `SubagentStart`, `SubagentStop`, `PreCompact`, `PostCompact`, `Stop`, `StopFailure`, `SessionEnd`. All but `Stop` only log. Every event except `StopFailure` has been seen live.
-- `tests/run.sh` checks the row format without a session.
+- Built in 0.5.0: `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `PostToolUseFailure`, `Notification`, `SubagentStart`, `SubagentStop`, `PreCompact`, `PostCompact`, `Stop`, `StopFailure`, `SessionEnd`. Every one except `StopFailure` has been seen live.
+- Added in 0.11.0, log only: `Setup`, `InstructionsLoaded`, `UserPromptExpansion`, `MessageDisplay`, `PermissionRequest`, `PermissionDenied`, `PostToolBatch`, `TaskCreated`, `TaskCompleted`, `TeammateIdle`, `ConfigChange`, `CwdChanged`, `DirectoryAdded`, `FileChanged`, `PreModelSwitch`, `PostModelSwitch`, `Elicitation`, `ElicitationResult`. That is 31 of the 33 events in the hooks reference.
+- `MessageDisplay` runs with `async: true`: Claude Code holds each batch of streamed text until a synchronous hook returns, and a log row is not worth that wait.
+- `FileChanged` only fires for filenames listed in its matcher, which are literal names in the working directory, not patterns. `hooks.json` lists `.envrc`, `.env`, `mise.toml`, `.mise.toml` and `.mcp.json`.
+- `tests/run.sh` checks the row format without a session, that `hooks.json` and `scripts/events/` list the same events, and that every script writes its row.
 
 ## Left out on purpose
 
 - Never committed; `log.jsonl` is gitignored.
+- `WorktreeCreate` and `WorktreeRemove`. A `WorktreeCreate` hook replaces Claude Code's own `git worktree` step and must create the worktree and print its path, so one that only logs would break `claude --worktree` and worktree-isolated subagents. `WorktreeRemove` only fires for worktrees such a hook created.
 - Mod-only events (`prompt.compose`, `ui.*`, `turn.complete`, ...). We act upon plain hook events only.
