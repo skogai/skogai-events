@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Reads skogai-core's mod settings: the `userConfig` options in
+# Reads skogai-events's mod settings: the `userConfig` options in
 # .claude-plugin/plugin.json, which Claude Code exports to every hook as
-# CLAUDE_PLUGIN_OPTION_<KEY>. Set them with `/plugin configure skogai-core`
+# CLAUDE_PLUGIN_OPTION_<KEY>. Set them with `/plugin configure skogai-events`
 # or in /config. The fallbacks here match plugin.json's defaults, for runs
 # outside Claude Code (tests). The `enabled` master switch is checked in
 # guard.sh, before anything else runs. Source it with $root set (the git root); it sets:
@@ -29,7 +29,7 @@ skogai_path() {
 }
 
 SKOGAI_EVENTS=$(skogai_opt events '*')
-SKOGAI_LOG=$(skogai_path log_path .skogai/logs/skogai-core/log.jsonl)
+SKOGAI_LOG=$(skogai_path log_path .skogai/logs/event.jsonl)
 SKOGAI_JOURNAL=$(skogai_path journal_path .skogai/journal.md)
 SKOGAI_STATE=$(skogai_path state_dir .skogai/tmp)
 

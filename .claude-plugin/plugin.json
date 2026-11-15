@@ -1,6 +1,6 @@
 {
-  "name": "skogai-core",
-  "version": "0.11.1",
+  "name": "skogai-events",
+  "version": "0.12.0",
   "description": "Acts upon Claude Code hook events with one script per event. Each part (event log, turn journal, diff state files, git steps, status line) is a mod setting, all off by default.",
   "author": {
     "name": "Emil Skogsund"
@@ -22,7 +22,7 @@
       "type": "string",
       "title": "Log path",
       "description": "Event log file (JSON lines), relative to the git root or absolute.",
-      "default": ".skogai/logs/skogai-core/log.jsonl"
+      "default": ".skogai/logs/event.jsonl"
     },
     "journal": {
       "type": "boolean",

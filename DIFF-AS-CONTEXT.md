@@ -29,7 +29,7 @@ The diffs carry context on their own. A hunk that edits a doc like this one show
 - `scripts/events/Stop.sh` writes the journal on every `Stop` when the `journal` mod setting is on.
 - Git steps are mod settings, all off by default, read by `scripts/git-steps.sh` on `Stop` and `UserPromptSubmit`: `{stage,commit,merge}_on_{stop,prompt}` run `git add -A`, `wt step commit` and `wt merge --no-remove`.
 - With `write_state` on, `scripts/write-state.sh` writes `git-diff`, `git-diff-cached` and `wt-step-diff` to `state_dir` (default `.skogai/tmp/`) on `SessionStart`, `UserPromptSubmit` and `Stop`. The directory ignores itself. Nothing injects them into context yet.
-- The big `log.jsonl` stays globally gitignored, as the raw source.
+- The big `event.jsonl` stays globally gitignored, as the raw source.
 
 ## Known problems
 

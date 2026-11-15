@@ -51,7 +51,7 @@ row PostToolUseFailure $p "{\"tool_name\": \"Read\", \"tool_input\": {\"file_pat
 row PostToolUse $other '{"tool_name": "Bash", "tool_input": {"command": "not this turn"}}' | "$scripts/append-json.sh"
 row Stop $p '{"last_assistant_message": "done"}' | CLAUDE_PLUGIN_OPTION_STAGE_ON_STOP=true "$scripts/events/Stop.sh"
 
-log="$repo/.skogai/logs/skogai-core/log.jsonl"
+log="$repo/.skogai/logs/event.jsonl"
 check "log is at the git root, one row per event" \
   "UserPromptSubmit UserPromptSubmit PostToolUse PostToolUse PostToolUseFailure PostToolUse Stop" \
   "$(jq -r .event "$log" | paste -sd' ')"
@@ -104,10 +104,10 @@ CLAUDE_PLUGIN_OPTION_ENABLED=false "$scripts/events/Stop.sh" <<<"$(row Stop $p '
 check "settings: enabled false logs and journals nothing" "$before 1" \
   "$(wc -l <"$log") $(grep -c '^## ' "$repo/.skogai/journal.md")"
 
-# hooks.json and scripts/events must agree, and every script must log its row.
+# hooks.json must be what the generator writes, and every script must log its row.
+check "hooks.json matches generate-hooks-json.sh" 0 \
+  "$("$scripts/generate-hooks-json.sh" --check >/dev/null 2>&1; echo $?)"
 events=$(jq -r '.hooks | keys[]' "$scripts/../hooks/hooks.json" | sort)
-check "hooks.json and the executable scripts in events/ list the same events" "$events" \
-  "$(find "$scripts/events" -name '*.sh' -executable -printf '%f\n' | sed 's/\.sh$//' | sort)"
 : >"$log"
 for event in $events; do
   row "$event" $p | "$scripts/events/$event.sh" >/dev/null

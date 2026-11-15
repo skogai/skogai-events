@@ -1,4 +1,4 @@
-# Learnings: building skogai-core
+# Learnings: building skogai-events (skogai-core until 0.11.1)
 
 Notes from the first mod. Each entry records what we found, where it came from, and what it means for the next plugin. Keep appending as we learn more; this is the seed for a larger hooks-and-plugins project.
 
@@ -42,7 +42,7 @@ The plugin started as a way to act upon what Claude Code calls hooks, and drifte
 - **Plain hooks avoid the `$.fs` problems.** The event JSON arrives on stdin, `>>` really appends, and `git rev-parse --show-toplevel` fixes the working-directory problem. No 4 MiB limit, no read-modify-write queue.
 - **`$.process.run` has no stdin,** only an argument list, and one Linux argument is capped at 128 KiB. That ruled out a mod that hands events to scripts as arguments.
 - **`prompt_id` ties a turn together.** `UserPromptSubmit`, `PostToolUse` and `Stop` all carry it, so `Stop.sh` finds the turn's prompt and tool uses with `grep -F "$prompt_id"` on the log. Subagent rows carry `agent_id` and are skipped.
-- **`classic.*` hooks are skipped where the built-in guard loads** (2026-11-06). `cc-plugin-sec-default` (see `docs/plugins/mods/admin.md`, loads on a Team/Enterprise login or with managed settings) passes every `classic.*` event past user-installed mods: one `skogai-core: its classic.Stop hook was skipped. "cc-plugin-sec-default" runs first and sent the event on past it.` notice per event. The plain hooks in `hooks.json` still run. Use native events (`turn.start`, `tool.call`, `turn.complete`, `session.start`) instead. The entries below about `classic.*` held before the guard loaded.
+- **`classic.*` hooks are skipped where the built-in guard loads** (2026-11-06). `cc-plugin-sec-default` (see `docs/plugins/mods/admin.md` in skogai2/marketplace, loads on a Team/Enterprise login or with managed settings) passes every `classic.*` event past user-installed mods: one `skogai-events: its classic.Stop hook was skipped. "cc-plugin-sec-default" runs first and sent the event on past it.` notice per event. The plain hooks in `hooks.json` still run. Use native events (`turn.start`, `tool.call`, `turn.complete`, `session.start`) instead. The entries below about `classic.*` held before the guard loaded.
 - **`classic.*` lets a mod follow the plain hooks.** Awaiting `next(e)` before reading the log lets the plain hooks write their row first. Confirmed in an interactive session after `/reload-plugins`.
 - **The validator reports `gating hook without .catch: classic.*`.** It's informational. The hook catches its own errors and always returns `next`'s result.
 - **Headless check:** `claude -p` in a scratch repo, started from a subdirectory, logged `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `Stop` (with its action) and `SessionEnd`. The journal entry landed at the git root and was staged.
@@ -58,7 +58,7 @@ The plugin started as a way to act upon what Claude Code calls hooks, and drifte
 ### Not done yet
 
 - **`StopFailure`** hasn't been seen live yet (it needs an API error to end a turn).
-- **`claude plugin test`** for the status-line mod needs a `*.test.ts` file. The test kit's API is in `docs/plugins/mods/test.md`.
+- **`claude plugin test`** for the status-line mod needs a `*.test.ts` file. The test kit's API is in `docs/plugins/mods/test.md` in skogai2/marketplace.
 
 ## History: 0.4.0, the all-events mod
 
@@ -66,7 +66,7 @@ The plugin started as a way to act upon what Claude Code calls hooks, and drifte
 
 ### Headless check
 
-`claude -p "reply with just OK" --plugin-dir plugins/skogai-core` wrote six lines: `session.start`, `prompt.compose`, `prompt.submit`, `turn.start`, `turn.complete`, `session.end`. The model answered `OK`.
+`claude -p "reply with just OK" --plugin-dir .` wrote six lines: `session.start`, `prompt.compose`, `prompt.submit`, `turn.start`, `turn.complete`, `session.end`. The model answered `OK`.
 
 - **Order is what you'd expect:** the session opens, the system prompt is composed, the prompt is submitted, the turn runs, then the session ends.
 - **`tool.call` did not fire** because the reply used no tools. A prompt that runs Bash should produce `tool.call` lines.
@@ -75,7 +75,7 @@ The plugin started as a way to act upon what Claude Code calls hooks, and drifte
 
 ### Filling in the rest of the events (build 2.1.295)
 
-Expanded from 10 events to every plain (non-generator) event the validator will register, plus `classic.*`. Checked against `docs/plugins/mods/reference.md` in this repo, then confirmed with `claude plugin validate` and a headless run (`claude -p "run ls" --plugin-dir ...`).
+Expanded from 10 events to every plain (non-generator) event the validator will register, plus `classic.*`. Checked against `docs/plugins/mods/reference.md` in skogai2/marketplace, then confirmed with `claude plugin validate` and a headless run (`claude -p "run ls" --plugin-dir ...`).
 
 - **`engine.create` can't be hooked the same way as the rest.** It fires while `$` is still being assembled for this mod, so `$.ui.status(...)` inside it threw `undefined is not an object (evaluating '$.ui.status')` and the whole module failed to load with `hooks module did not load: engine.create failed`. One bad hook keeps every hook in the module from registering, not just the one that threw. Dropped it; logging it would need a path that doesn't touch `$.ui` or `$.fs`.
 - **`classic.*` works as a literal wildcard.** `on('classic.*', ...)` matched real settings-hook firings (`SessionStart`, `UserPromptSubmit`, `Stop`, ...) in the headless run, each landing as one `"classic.*"` line. `e` is the same stdin JSON a settings hook reads, with `hook_event_name` saying which one it was.

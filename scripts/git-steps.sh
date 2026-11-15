@@ -24,7 +24,7 @@ if [[ ${#paths[@]} -gt 0 ]]; then
   git -C "$root" add -- "${paths[@]}"
   if git -C "$root" diff --cached --quiet -- "${paths[@]}"; then
     : # nothing new since the last commit
-  elif git -C "$root" commit -q --only -m "skogai-core: journal" -- "${paths[@]}" >&2; then
+  elif git -C "$root" commit -q --only -m "skogai-events: journal" -- "${paths[@]}" >&2; then
     ran+=("committed journal")
   else
     ran+=("journal commit (failed)")

@@ -1,8 +1,8 @@
-# skogai-core
+# skogai-events
 
 A Claude Code plugin for acting upon hook events. Each event we act upon has its own script, every action is logged, and the status line shows the event being acted upon. What it does and why is in [FEATURES.md](FEATURES.md):
 
-- **Event log:** one JSON row per event we act upon in `.skogai/logs/skogai-core/log.jsonl` at the git root.
+- **Event log:** one JSON row per event we act upon in `.skogai/logs/event.jsonl` at the git root.
 - **Diff as handover:** on `Stop`, appends the turn (prompt, reply, tool uses) to `.skogai/journal.md` at the git root and commits only that file (other work and the log are left alone). Optional git steps run `git add -A`, `wt step commit` and `wt merge`.
 - **Status line:** shows `hook: <event>` from the log's last row.
 
@@ -11,43 +11,46 @@ All of it is off until switched on in the [settings](#settings).
 ## Installing it
 
 ```sh
-/plugin install skogai-core --marketplace skogai2/marketplace
+/plugin install skogai-events@skogai-marketplace
 ```
+
+The marketplace is [skogai2/marketplace](https://github.com/skogai2/marketplace). This plugin was `skogai-core` there until 0.11.1; that copy is left as it is for its current users.
 
 ## Running it
 
+From a checkout of this repo:
+
 ```sh
-cd ~/marketplace
-claude --plugin-dir plugins/skogai-core
+claude --plugin-dir .
 ```
 
 The scripts need `bash`, `jq`, `git` and `flock`. Check the plugin without a session:
 
 ```sh
-claude plugin validate plugins/skogai-core
+claude plugin validate .
 ```
 
 Test the scripts without a session (needs nothing but the tools above):
 
 ```sh
-plugins/skogai-core/tests/run.sh
+tests/run.sh
 ```
 
 Tail the log while you use Claude:
 
 ```sh
-tail -f .skogai/logs/skogai-core/log.jsonl | jq -c '{event, action}'
+tail -f .skogai/logs/event.jsonl | jq -c '{event, action}'
 ```
 
 ## Settings
 
-Mod settings (`userConfig` in `.claude-plugin/plugin.json`). Set them with `/plugin configure skogai-core@skogai-marketplace` or in `/config`; they're stored under `pluginConfigs` in `~/.claude/settings.json`, so they apply to every project. Hooks read them from `CLAUDE_PLUGIN_OPTION_<KEY>` (through `scripts/settings.sh`), the status-line module from `options`. Run `/reload-plugins` after a change.
+Mod settings (`userConfig` in `.claude-plugin/plugin.json`). Set them with `/plugin configure skogai-events@skogai-marketplace` or in `/config`; they're stored under `pluginConfigs` in `~/.claude/settings.json`, so they apply to every project. Hooks read them from `CLAUDE_PLUGIN_OPTION_<KEY>` (through `scripts/settings.sh`), the status-line module from `options`. Run `/reload-plugins` after a change.
 
 | Key | Default | What it does |
 |---|---|---|
 | `enabled` | `false` | Master switch. Off: nothing is logged, journaled, written or run |
 | `events` | `*` | Hook events to log, space-separated; globs such as `Post*` work. The journal needs `UserPromptSubmit` and `PostToolUse*`. `MessageDisplay` writes a row per batch of streamed lines, so leave it out for a quieter log |
-| `log_path` | `.skogai/logs/skogai-core/log.jsonl` | Event log, relative to the git root or absolute |
+| `log_path` | `.skogai/logs/event.jsonl` | Event log, relative to the git root or absolute |
 | `journal` | `false` | On `Stop`, append the turn to the journal and commit only that file |
 | `journal_path` | `.skogai/journal.md` | Turn journal, relative to the git root or absolute |
 | `write_state` | `false` | Write `git-diff`, `git-diff-cached` and `wt-step-diff` on `SessionStart`, `UserPromptSubmit` and `Stop` |
@@ -57,18 +60,19 @@ Mod settings (`userConfig` in `.claude-plugin/plugin.json`). Set them with `/plu
 | `commit_on_stop` / `commit_on_prompt` | `false` | `wt step commit`, skipped when the tree is clean |
 | `merge_on_stop` / `merge_on_prompt` | `false` | `wt merge --no-remove` |
 
-Loaded with `--plugin-dir`, the plugin has no configure dialog; set the values under `pluginConfigs["skogai-core@inline"].options` in `~/.claude/settings.json`.
+Loaded with `--plugin-dir`, the plugin has no configure dialog; set the values under `pluginConfigs["skogai-events@inline"].options` in `~/.claude/settings.json`.
 
 ## Files
 
 ```
 .claude-plugin/plugin.json   manifest
-hooks/hooks.json             the events we act upon, plus the status-line module
+hooks/hooks.json             generated: the events we act upon, plus the status-line module
 hooks/register.ts            the status-line mod: shows the log's last event
 scripts/events/<Event>.sh    one script per event, run with the event's JSON on stdin
 scripts/append-json.sh       appends one row to the log: <json> | append-json.sh [action]
 scripts/git-steps.sh         runs the switched-on git steps: git-steps.sh <stop|prompt> <root> [path...]
 scripts/write-state.sh       writes git-diff, git-diff-cached, wt-step-diff: write-state.sh <root> <dir>
+scripts/generate-hooks-json.sh  writes hooks/hooks.json from scripts/events/: [--check]
 scripts/guard.sh             sourced first by the scripts: ends the hook when `enabled` is off
 scripts/settings.sh          sourced by the scripts: reads the mod settings
 tests/run.sh                 tests the scripts in a throwaway git repo
@@ -78,8 +82,10 @@ tests/run.sh                 tests the scripts in a throwaway git repo
 
 Every event in the [hooks reference](https://code.claude.com/docs/en/hooks#hook-events) has a script already, except the two listed under [event log](.skogai/features/event-log.md#left-out-on-purpose). For a new one:
 
-1. Add the event to `hooks/hooks.json`, pointing at `scripts/events/<Event>.sh`. `tests/run.sh` fails when the two disagree.
-2. Write the script. Do the work, then pipe the input to `append-json.sh` with a short description of what you did. A script that only logs is one line:
+1. Write `scripts/events/<Event>.sh` and make it executable.
+2. Run `scripts/generate-hooks-json.sh`. `tests/run.sh` fails when `hooks.json` is out of date.
+
+In the script, do the work, then pipe the input to `append-json.sh` with a short description of what you did. A script that only logs is one line:
 
    ```sh
    exec "$(dirname "$0")/../append-json.sh"

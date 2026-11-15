@@ -5,7 +5,7 @@ import type { Register } from 'claude-code'
 // the log's last row in the status line, when the `enabled` and
 // `status_line` mod settings are both on. `options` holds the userConfig
 // values from plugin.json, defaults filled in.
-const LOG = '.skogai/logs/skogai-core/log.jsonl'
+const LOG = '.skogai/logs/event.jsonl'
 
 // The git root, found once per load. The scripts resolve the log against it
 // too, so both agree wherever the session's working directory is.

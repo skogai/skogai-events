@@ -1,3 +1,4 @@
-log.jsonl
+.skogai/logs/
+.skogai/tmp/
 .claude-plugin/types/
 tsconfig.json
