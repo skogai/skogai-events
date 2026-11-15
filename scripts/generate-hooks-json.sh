@@ -11,7 +11,8 @@ out=$root/hooks/hooks.json
 #   MessageDisplay  async, because Claude Code holds streamed text until a
 #                   synchronous hook returns
 #   FileChanged     only fires for the literal filenames in its matcher
-generated=$(cd "$root/scripts/events" && ls -- *.sh | sed 's/\.sh$//' | jq -Rn '
+# Sorted in the C locale, so the file is the same on every machine.
+generated=$(cd "$root/scripts/events" && ls -- *.sh | sed 's/\.sh$//' | LC_ALL=C sort | jq -Rn '
   {modules: ["./register.ts"], hooks: ([inputs] | map({key: ., value: [
     (if . == "FileChanged" then {matcher: ".envrc|.env|mise.toml|.mise.toml|.mcp.json"} else {} end)
     + {hooks: [{type: "command", command: "\"${CLAUDE_PLUGIN_ROOT}/scripts/events/\(.).sh\""}
