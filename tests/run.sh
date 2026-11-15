@@ -32,8 +32,10 @@ p=11111111-aaaa-bbbb-cccc-000000000000
 other=22222222-aaaa-bbbb-cccc-000000000000
 
 # Off by default: with no mod settings set, nothing is logged or journaled.
-row UserPromptSubmit $p '{"prompt": "ignored"}' | "$scripts/events/UserPromptSubmit.sh"
-row Stop $p '{"last_assistant_message": "x"}' | "$scripts/events/Stop.sh"
+# A switched-off hook exits without reading stdin, so these rows go in as
+# here-strings: a pipe would fail the writer under pipefail.
+"$scripts/events/UserPromptSubmit.sh" <<<"$(row UserPromptSubmit $p '{"prompt": "ignored"}')"
+"$scripts/events/Stop.sh" <<<"$(row Stop $p '{"last_assistant_message": "x"}')"
 check "defaults: no log, no journal, no state" "" \
   "$(ls -A "$repo/.skogai" 2>/dev/null)"
 
@@ -97,8 +99,8 @@ check "settings: journal off writes and commits nothing" "1 $commits" \
 
 # enabled off: nothing at all.
 before=$(wc -l <"$log")
-row UserPromptSubmit $p | CLAUDE_PLUGIN_OPTION_ENABLED=false "$scripts/events/UserPromptSubmit.sh"
-row Stop $p '{"last_assistant_message": "x"}' | CLAUDE_PLUGIN_OPTION_ENABLED=false "$scripts/events/Stop.sh"
+CLAUDE_PLUGIN_OPTION_ENABLED=false "$scripts/events/UserPromptSubmit.sh" <<<"$(row UserPromptSubmit $p)"
+CLAUDE_PLUGIN_OPTION_ENABLED=false "$scripts/events/Stop.sh" <<<"$(row Stop $p '{"last_assistant_message": "x"}')"
 check "settings: enabled false logs and journals nothing" "$before 1" \
   "$(wc -l <"$log") $(grep -c '^## ' "$repo/.skogai/journal.md")"
 
@@ -111,5 +113,9 @@ for event in $events; do
   row "$event" $p | "$scripts/events/$event.sh" >/dev/null
 done
 check "every event script logs its event" "$events" "$(jq -r .event "$log" | sort)"
+
+# A failed log write must not exit 2, which would block the event.
+check "a failed log write exits 1, never 2" 1 \
+  "$(row PreModelSwitch $p | CLAUDE_PLUGIN_OPTION_LOG_PATH=/dev/full "$scripts/events/PreModelSwitch.sh" 2>/dev/null; echo $?)"
 
 exit $fail

@@ -5,6 +5,7 @@
 # write-state.sh); and log it. The prompt and the tool uses come from this
 # turn's rows in the log, matched by prompt_id.
 set -euo pipefail
+. "$(dirname "$0")/../guard.sh"
 
 here=$(dirname "$0")
 input=$(cat)
@@ -16,7 +17,6 @@ if ! root=$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null); then
 fi
 
 . "$here/../settings.sh"
-[[ $SKOGAI_ENABLED == true ]] || exit 0
 log=$SKOGAI_LOG
 journal=$SKOGAI_JOURNAL
 prompt_id=$(jq -r '.prompt_id // empty' <<<"$input")

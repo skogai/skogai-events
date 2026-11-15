@@ -3,8 +3,8 @@
 # .claude-plugin/plugin.json, which Claude Code exports to every hook as
 # CLAUDE_PLUGIN_OPTION_<KEY>. Set them with `/plugin configure skogai-core`
 # or in /config. The fallbacks here match plugin.json's defaults, for runs
-# outside Claude Code (tests). Source it with $root set (the git root); it sets:
-#   SKOGAI_ENABLED  true or false: the master switch
+# outside Claude Code (tests). The `enabled` master switch is checked in
+# guard.sh, before anything else runs. Source it with $root set (the git root); it sets:
 #   SKOGAI_EVENTS   event names (globs allowed) to log; * or empty logs every one
 #   SKOGAI_LOG      absolute path of the event log
 #   SKOGAI_JOURNAL  absolute path of the turn journal
@@ -28,8 +28,6 @@ skogai_path() {
   printf '%s' "$p"
 }
 
-SKOGAI_ENABLED=false
-skogai_on enabled && SKOGAI_ENABLED=true
 SKOGAI_EVENTS=$(skogai_opt events '*')
 SKOGAI_LOG=$(skogai_path log_path .skogai/logs/skogai-core/log.jsonl)
 SKOGAI_JOURNAL=$(skogai_path journal_path .skogai/journal.md)

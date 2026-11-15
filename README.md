@@ -69,6 +69,7 @@ scripts/events/<Event>.sh    one script per event, run with the event's JSON on 
 scripts/append-json.sh       appends one row to the log: <json> | append-json.sh [action]
 scripts/git-steps.sh         runs the switched-on git steps: git-steps.sh <stop|prompt> <root> [path...]
 scripts/write-state.sh       writes git-diff, git-diff-cached, wt-step-diff: write-state.sh <root> <dir>
+scripts/guard.sh             sourced first by the scripts: ends the hook when `enabled` is off
 scripts/settings.sh          sourced by the scripts: reads the mod settings
 tests/run.sh                 tests the scripts in a throwaway git repo
 ```

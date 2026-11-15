@@ -28,14 +28,14 @@ skogai-core exists to act upon events. The log is the record of every time it di
 
 - `hooks/hooks.json` is the list of events we act upon. Each one runs `scripts/events/<Event>.sh` with the event's JSON on stdin.
 - Each script does what that event needs, then calls `scripts/append-json.sh [action]`, which appends one row with `>>` under `flock`.
-- To act upon another event, add it to `hooks.json` and add its script.
+- To act upon another event: [README.md#acting-upon-another-event](../../README.md#acting-upon-another-event).
 
 ## Status
 
 - Built in 0.5.0: `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `PostToolUseFailure`, `Notification`, `SubagentStart`, `SubagentStop`, `PreCompact`, `PostCompact`, `Stop`, `StopFailure`, `SessionEnd`. Every one except `StopFailure` has been seen live.
 - Added in 0.11.0, log only: `Setup`, `InstructionsLoaded`, `UserPromptExpansion`, `MessageDisplay`, `PermissionRequest`, `PermissionDenied`, `PostToolBatch`, `TaskCreated`, `TaskCompleted`, `TeammateIdle`, `ConfigChange`, `CwdChanged`, `DirectoryAdded`, `FileChanged`, `PreModelSwitch`, `PostModelSwitch`, `Elicitation`, `ElicitationResult`. That is 31 of the 33 events in the hooks reference.
-- `MessageDisplay` runs with `async: true`: Claude Code holds each batch of streamed text until a synchronous hook returns, and a log row is not worth that wait.
-- `FileChanged` only fires for filenames listed in its matcher, which are literal names in the working directory, not patterns. `hooks.json` lists `.envrc`, `.env`, `mise.toml`, `.mise.toml` and `.mcp.json`.
+- `MessageDisplay` runs with `async: true`: Claude Code holds each batch of streamed text until a synchronous hook returns, and a log row is not worth that wait. Its rows can land out of `index` order, and under `claude -p` the last one can be lost when the session is torn down.
+- `FileChanged` only fires for filenames listed in its matcher, which are literal names in the working directory, not patterns. `hooks.json` lists `.envrc`, `.env`, `mise.toml`, `.mise.toml` and `.mcp.json`. They are looked up in the session's working directory, so a session started in a subdirectory misses the ones at the git root.
 - `tests/run.sh` checks the row format without a session, that `hooks.json` and `scripts/events/` list the same events, and that every script writes its row.
 
 ## Left out on purpose
